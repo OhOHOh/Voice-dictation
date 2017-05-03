@@ -35,6 +35,14 @@
         android:layout_height="0dp"
         android:layout_weight="2" />
 
+    <LinearLayout
+        android:id="@+id/root"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    </LinearLayout>
+
 
     <LinearLayout
         android:layout_width="match_parent"

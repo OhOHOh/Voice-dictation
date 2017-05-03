@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,8 +15,13 @@ import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +45,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -109,6 +118,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v)
             {
+
+                //网页显示
+                LinearLayout main = (LinearLayout)findViewById(R.id.root);
+                ViewGroup.LayoutParams lp = main.getLayoutParams();
+                lp.width = 0;
+                lp.height = 0;
+                main.setLayoutParams(lp);
+                main.removeAllViews();
+
                 mUnderstanderText.setText("");
 
                 //设置参数, 带 UI 界面的, 使用的是 RecognizerDialog 类
@@ -445,7 +463,8 @@ public class MainActivity extends AppCompatActivity {
                 addToMsgListUI(ret);
                 String webUri = jsonObject.optJSONObject("webPage").optString("url");
                 //调用 浏览器 界面, 延时 2 秒
-                openWeb(webUri);
+                openWebPage(webUri);
+
                 break;
             default:
                 break;
@@ -526,21 +545,34 @@ public class MainActivity extends AppCompatActivity {
     /**
      *  调用系统自带的 浏览器 软件,   延迟 2 秒实现
      */
-    private void openWeb(final String webUrl)
+    private void openWebPage(final String webUrl)
     {
-        new Thread() {
-            @Override
+        //Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl));
+        //startActivity(intent);
+
+        new Handler().postDelayed(new Runnable(){
             public void run() {
-                super.run();
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl));
-                startActivity(intent);
+                //execute the task
+                //网页显示
+                LinearLayout main = (LinearLayout)findViewById(R.id.root);
+                ViewGroup.LayoutParams lp = main.getLayoutParams();
+                main.setOrientation(LinearLayout.HORIZONTAL);
+                lp.width = MATCH_PARENT;
+                lp.height = WRAP_CONTENT;
+                main.setLayoutParams(lp);
+
+                WebView webView = new WebView(MainActivity.this);
+                main.addView(webView);
+
+                WebSettings webSettings = webView.getSettings();
+                webSettings.setJavaScriptEnabled(true);
+                webSettings.setUseWideViewPort(true);
+                webSettings.setLoadWithOverviewMode(true);
+
+                webView.setWebViewClient(new WebViewClient());
+                webView.loadUrl(webUrl);
             }
-        }.start();
+        }, 3000);
     }
     /**
      * 通过获得的 appName 来打开手机上的软件,
