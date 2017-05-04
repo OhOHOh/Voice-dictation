@@ -47,15 +47,16 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_gravity="center"
+        android:orientation="vertical">
 
-        <Button
+        <ImageButton
             android:id="@+id/start_understander"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="开始语义理解"
-            android:textSize="20sp"/>
+            android:layout_gravity="center"
+            android:background="@drawable/speak"/>
+        <!--
         <Button
             android:id="@+id/contact"
             android:layout_width="0dp"
@@ -63,6 +64,7 @@
             android:layout_weight="1"
             android:text="上传联系人"
             android:textSize="20sp"/>
+        -->
 
     </LinearLayout>
 

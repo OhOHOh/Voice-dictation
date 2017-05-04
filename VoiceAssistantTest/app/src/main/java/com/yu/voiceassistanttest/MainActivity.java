@@ -20,7 +20,7 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,8 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private RecognizerDialog mIatDialog;
     private Toast mToast;
     private TextView mUnderstanderText;
-    private Button btn;       //语义理解的 Button
-    private Button contact;  //上传联系人的 Button
+    //private Button contact;  //上传联系人的 Button
 
     // 消息存储
     private List<Msg> msgList = new ArrayList<>();
@@ -82,6 +81,10 @@ public class MainActivity extends AppCompatActivity {
 
         SpeechUtility.createUtility(this, SpeechConstant.APPID+"=58eddecc");
 
+        //上传联系人
+        ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
+        mgr.asyncQueryAllContactsName();
+
         initMsgs();   //初始化消息, 欢迎界面
         msgRecyclerView = (RecyclerView) findViewById(R.id.msg_recycle_view);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -98,17 +101,18 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "InitListener init() code = " + code);
                 if (code != ErrorCode.SUCCESS) {
                     showTip("初始化失败,错误码："+code);
-                } else {
-                    // 初始化成功，之后可以调用startSpeaking方法
-                    // 注：有的开发者在onCreate方法中创建完合成对象之后马上就调用startSpeaking进行合成，
-                    // 正确的做法是将onCreate中的startSpeaking调用移至这里
                 }
+                // else
+                // 初始化成功，之后可以调用startSpeaking方法
+                // 注：有的开发者在onCreate方法中创建完合成对象之后马上就调用startSpeaking进行合成，
+                // 正确的做法是将onCreate中的startSpeaking调用移至这里
+
             }
         }); //语音合成
         mSpeechUnderstander = SpeechUnderstander.createUnderstander(this, mSpeechUdrInitListener);
         mToast = Toast.makeText(MainActivity.this, "", Toast.LENGTH_SHORT);
-        btn = (Button)findViewById(R.id.start_understander);
-        contact = (Button)findViewById(R.id.contact);
+        ImageButton btn = (ImageButton)findViewById(R.id.start_understander);//语义理解的 Button
+        //contact = (Button)findViewById(R.id.contact);
         mUnderstanderText = (TextView) findViewById(R.id.understander_text);
         //使得 TextView 可以垂直滑动来获得内容
         mUnderstanderText.setMovementMethod(ScrollingMovementMethod.getInstance());
@@ -145,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 mIatDialog.show();
                 showTip(getString(R.string.talk_begin));
 
-                /**
+                /*
                  * 使用不带 UI 的界面, 即使用 SpeechUnderstander
                  * 正宗的语义理解!
                  *
@@ -170,6 +174,8 @@ public class MainActivity extends AppCompatActivity {
                  */
             }//onClick
         });//按钮的点击事件 btn
+        /*
+         * 将上传联系人功能添加到 onCreate 中
         contact.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v)
@@ -179,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 showTip(getString(R.string.text_upload_contacts));
             }
         });//按钮的点击事件 contact
+        */
     }//onCreate
 
     /**
@@ -208,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /**
+    /*
      * 语义理解回调。
      * 没有 UI 的界面
      * 当前程序 没有 使用这个回调, 用的是带 UI 的回调
@@ -337,7 +344,7 @@ public class MainActivity extends AppCompatActivity {
     {
         String strService = "";     //对应服务种类, 重要!
         String text = "";           //人 所说的话   SENT
-        String textstr = "";        //机器 返回的话 RECEIVED
+        String textstr;             //机器 返回的话 RECEIVED
         JSONObject jsonObject = new JSONObject();
         Msg ret;
 
@@ -359,7 +366,7 @@ public class MainActivity extends AppCompatActivity {
                 //电话号码, EG:打给120
                 String phoneCode = jsonObject.optJSONObject("semantic")
                         .optJSONObject("slots").optString("code");
-                String phoneNumber = "";
+                String phoneNumber;
 
                 if ("".equals(phoneCode)) {  //报的是 人名, 不是 数字
                     //与手机通讯录里的人名进行比较!!!
@@ -377,16 +384,14 @@ public class MainActivity extends AppCompatActivity {
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
                         addToMsgListUI(ret);
                         //调用 打电话 界面, 延时 2 秒
-                        final String finalPhoneNumber = phoneNumber;
-                        callSystemPhone(finalPhoneNumber);
+                        callSystemPhone(phoneNumber);
                     }
                 } else { //报的是 数字, 不是 人名
                     textstr = "好的，正在打电话给" + phoneCode;
                     ret = new Msg(textstr, Msg.TYPE_RECEIVED);
                     addToMsgListUI(ret);
                     //调用 打电话 界面, 延时 2 秒
-                    final String finalPhoneNumber = phoneCode;
-                    callSystemPhone(finalPhoneNumber);
+                    callSystemPhone(phoneCode);
                 }
                 break;//case "telephone"
             case "app": //知道需求是 应用, 有打开(LAUNCH), 下载(DOWNLOAD), 卸载(UNINSTALL), 退出(EXIT)等等
@@ -573,6 +578,7 @@ public class MainActivity extends AppCompatActivity {
                 webView.loadUrl(webUrl);
             }
         }, 3000);
+
     }
     /**
      * 通过获得的 appName 来打开手机上的软件,
@@ -581,7 +587,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private String checkApp(String appName)
     {
-        String applicationName = "";
+        String applicationName;
         PackageManager packageManager = MainActivity.this.getPackageManager();
         //获取手机内所有应用
         List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(0);
@@ -608,7 +614,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 //打开相应软件
-                Intent intent = new Intent();
+                Intent intent;
                 PackageManager packageManager = MainActivity.this.getPackageManager();
                 intent = packageManager.getLaunchIntentForPackage(packageName);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -711,6 +717,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 
 }
