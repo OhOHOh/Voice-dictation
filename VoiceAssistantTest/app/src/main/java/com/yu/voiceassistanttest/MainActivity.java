@@ -43,6 +43,7 @@ import com.iflytek.cloud.util.ContactManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +52,9 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String KEY_INDEX = "index";
+    private static final String KEY_BOOLEAN = "iboolean";
 
     private SpeechRecognizer mIat;
     // 语义理解对象（语音到语义）。
@@ -68,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Msg> msgList = new ArrayList<>();
     private RecyclerView msgRecyclerView;
     private MsgAdapter msgAdapter;
+    private boolean isUploadContacts = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,11 +85,23 @@ public class MainActivity extends AppCompatActivity {
 
         SpeechUtility.createUtility(this, SpeechConstant.APPID+"=58eddecc");
 
-        //上传联系人
-        ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
-        mgr.asyncQueryAllContactsName();
-
         initMsgs();   //初始化消息, 欢迎界面
+        /**
+         *  屏幕翻转时 保存 msgList 中的数据
+         */
+        if (savedInstanceState != null) {
+            msgList = (ArrayList<Msg>) savedInstanceState.getSerializable(KEY_INDEX);
+            isUploadContacts = savedInstanceState.getBoolean(KEY_BOOLEAN);
+        }
+        if (!isUploadContacts) {
+            //上传联系人
+            Toast.makeText(this, "isUpdateContacts is false", Toast.LENGTH_SHORT).show();
+            ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
+            mgr.asyncQueryAllContactsName();
+            isUploadContacts = true;
+        }
+
+
         msgRecyclerView = (RecyclerView) findViewById(R.id.msg_recycle_view);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         msgAdapter = new MsgAdapter(msgList);
@@ -696,6 +712,19 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+    /**
+     * 屏幕翻转时 保存 msgList 中的数据
+     * @param savedInstanceState
+     */
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState)
+    {
+        super.onSaveInstanceState(savedInstanceState);
+        Log.i(TAG, "onSaveInstanceState");
+        savedInstanceState.putSerializable(KEY_INDEX, (Serializable) msgList);
+        savedInstanceState.putBoolean(KEY_BOOLEAN, isUploadContacts);
+    }
 
 
     protected void onDestroy() {
