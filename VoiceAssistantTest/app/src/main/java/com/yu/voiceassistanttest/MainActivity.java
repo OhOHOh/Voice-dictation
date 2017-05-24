@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     // UI 界面
     private RecognizerDialog mIatDialog;
     private Toast mToast;
-    private TextView mUnderstanderText;
+    //private TextView mUnderstanderText;
     //private Button contact;  //上传联系人的 Button
 
     // 消息存储
@@ -129,9 +129,9 @@ public class MainActivity extends AppCompatActivity {
         mToast = Toast.makeText(MainActivity.this, "", Toast.LENGTH_SHORT);
         ImageButton btn = (ImageButton)findViewById(R.id.start_understander);//语义理解的 Button
         //contact = (Button)findViewById(R.id.contact);
-        mUnderstanderText = (TextView) findViewById(R.id.understander_text);
+        //mUnderstanderText = (TextView) findViewById(R.id.understander_text);
         //使得 TextView 可以垂直滑动来获得内容
-        mUnderstanderText.setMovementMethod(ScrollingMovementMethod.getInstance());
+        //mUnderstanderText.setMovementMethod(ScrollingMovementMethod.getInstance());
 
         //按钮的点击事件
         btn.setOnClickListener(new View.OnClickListener(){
@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
                 main.setLayoutParams(lp);
                 main.removeAllViews();
 
-                mUnderstanderText.setText("");
+                //mUnderstanderText.setText("");
 
                 //设置参数, 带 UI 界面的, 使用的是 RecognizerDialog 类
                 // 设置听写引擎
@@ -164,44 +164,43 @@ public class MainActivity extends AppCompatActivity {
                 // 显示听写对话框
                 mIatDialog.show();
                 showTip(getString(R.string.talk_begin));
-
-                /*
-                 * 使用不带 UI 的界面, 即使用 SpeechUnderstander
-                 * 正宗的语义理解!
-                 *
-                 //设置参数
-                 mSpeechUnderstander.setParameter(SpeechConstant.LANGUAGE, "zh_cn");
-                 mSpeechUnderstander.setParameter(SpeechConstant.ACCENT, "mandarin");
-                 mSpeechUnderstander.setParameter(SpeechConstant.NLP_VERSION, "2.0");
-                 mSpeechUnderstander.setParameter(SpeechConstant.RESULT_TYPE, "json");
-                 mSpeechUnderstander.setParameter(SpeechConstant.DOMAIN, "iat");
-                 // 开始前检查状态
-                 if (mSpeechUnderstander.isUnderstanding()) {
-                 mSpeechUnderstander.stopUnderstanding();
-                 showTip("停止录音，未准备好");
-                 } else {
-                 int ret = mSpeechUnderstander.startUnderstanding(mSpeechUnderstanderListener);
-                 if (ret != 0) {
-                 showTip("语义理解失败，错误码:" + ret);
-                 } else {
-                 showTip(getString(R.string.talk_begin));
-                 }
-                 }
-                 */
+//                /*
+//                 * 使用不带 UI 的界面, 即使用 SpeechUnderstander
+//                 * 正宗的语义理解!
+//                 *
+//                 //设置参数
+//                 mSpeechUnderstander.setParameter(SpeechConstant.LANGUAGE, "zh_cn");
+//                 mSpeechUnderstander.setParameter(SpeechConstant.ACCENT, "mandarin");
+//                 mSpeechUnderstander.setParameter(SpeechConstant.NLP_VERSION, "2.0");
+//                 mSpeechUnderstander.setParameter(SpeechConstant.RESULT_TYPE, "json");
+//                 mSpeechUnderstander.setParameter(SpeechConstant.DOMAIN, "iat");
+//                 // 开始前检查状态
+//                 if (mSpeechUnderstander.isUnderstanding()) {
+//                    mSpeechUnderstander.stopUnderstanding();
+//                    showTip("停止录音，未准备好");
+//                 } else {
+//                    int ret = mSpeechUnderstander.startUnderstanding(mSpeechUnderstanderListener);
+//                    if (ret != 0) {
+//                    showTip("语义理解失败，错误码:" + ret);
+//                    } else {
+//                        showTip(getString(R.string.talk_begin));
+//                    }
+//                 }
+//                 */
             }//onClick
         });//按钮的点击事件 btn
-        /*
-         * 将上传联系人功能添加到 onCreate 中
-        contact.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v)
-            {
-                ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
-                mgr.asyncQueryAllContactsName();
-                showTip(getString(R.string.text_upload_contacts));
-            }
-        });//按钮的点击事件 contact
-        */
+//        /*
+//         * 将上传联系人功能添加到 onCreate 中
+//        contact.setOnClickListener(new View.OnClickListener(){
+//            @Override
+//            public void onClick(View v)
+//            {
+//                ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
+//                mgr.asyncQueryAllContactsName();
+//                showTip(getString(R.string.text_upload_contacts));
+//            }
+//        });//按钮的点击事件 contact
+//        */
     }//onCreate
 
     /**
@@ -231,59 +230,59 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /*
-     * 语义理解回调。
-     * 没有 UI 的界面
-     * 当前程序 没有 使用这个回调, 用的是带 UI 的回调
-
-     private SpeechUnderstanderListener mSpeechUnderstanderListener = new SpeechUnderstanderListener()
-     {
-     @Override
-     public void onVolumeChanged(int volume, byte[] bytes) {
-     showTip("当前正在说话，音量大小：" + volume);
-     Log.d(TAG, bytes.length+"");
-     }
-
-     @Override
-     public void onBeginOfSpeech() {
-     // 此回调表示：sdk内部录音机已经准备好了，用户可以开始语音输入
-     showTip("开始说话");
-     }
-
-     @Override
-     public void onEndOfSpeech() {
-     // 此回调表示：检测到了语音的尾端点，已经进入识别过程，不再接受语音输入
-     showTip("结束说话");
-     }
-
-     @Override
-     public void onResult(final UnderstanderResult understanderResult) {
-     if (null != understanderResult) {
-     Log.d(TAG, understanderResult.getResultString());
-
-     //显示
-     String text = understanderResult.getResultString();
-     if (!TextUtils.isEmpty(text)) {
-     mUnderstanderText.setText(text);
-     //分析 json 数据
-     parseJSONObject(text);
-     } else {
-     showTip("识别不正确");
-     }
-     }
-     }
-
-     @Override
-     public void onError(SpeechError speechError) {
-     showTip(speechError.getPlainDescription(true));
-     }
-
-     @Override
-     public void onEvent(int i, int i1, int i2, Bundle bundle) {
-
-     }
-     };
-     */
+//    /*
+//     * 语义理解回调。
+//     * 没有 UI 的界面
+//     * 当前程序 没有 使用这个回调, 用的是带 UI 的回调
+//
+//     private SpeechUnderstanderListener mSpeechUnderstanderListener = new SpeechUnderstanderListener()
+//     {
+//     @Override
+//     public void onVolumeChanged(int volume, byte[] bytes) {
+//     showTip("当前正在说话，音量大小：" + volume);
+//     Log.d(TAG, bytes.length+"");
+//     }
+//
+//     @Override
+//     public void onBeginOfSpeech() {
+//     // 此回调表示：sdk内部录音机已经准备好了，用户可以开始语音输入
+//     showTip("开始说话");
+//     }
+//
+//     @Override
+//     public void onEndOfSpeech() {
+//     // 此回调表示：检测到了语音的尾端点，已经进入识别过程，不再接受语音输入
+//     showTip("结束说话");
+//     }
+//
+//     @Override
+//     public void onResult(final UnderstanderResult understanderResult) {
+//     if (null != understanderResult) {
+//     Log.d(TAG, understanderResult.getResultString());
+//
+//     //显示
+//     String text = understanderResult.getResultString();
+//     if (!TextUtils.isEmpty(text)) {
+//     mUnderstanderText.setText(text);
+//     //分析 json 数据
+//     parseJSONObject(text);
+//     } else {
+//     showTip("识别不正确");
+//     }
+//     }
+//     }
+//
+//     @Override
+//     public void onError(SpeechError speechError) {
+//     showTip(speechError.getPlainDescription(true));
+//     }
+//
+//     @Override
+//     public void onEvent(int i, int i1, int i2, Bundle bundle) {
+//
+//     }
+//     };
+//     */
     /**
      * 听写UI监听器
      * 当前程序使用的是这个回调!
@@ -296,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
                 //显示
                 String text = results.getResultString();
                 if (!TextUtils.isEmpty(text)) {
-                    mUnderstanderText.setText(text);  //强行显示 JSON 数据
+                    //mUnderstanderText.setText(text);  //强行显示 JSON 数据
                     //分析 json 数据
                     parseJSONObject(text);
                 } else {
@@ -326,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mUnderstanderText.setText(contactInfos);
+                    //mUnderstanderText.setText(contactInfos);
                 }
             });
             mSpeechUnderstander.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD);
@@ -372,7 +371,17 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         ret = new Msg(text, Msg.TYPE_SENT);
-        addToMsgListUI(ret);
+        addToMsgListUI(ret, true);
+
+        if (text.equals("开发者信息。") || text.equals("开发者。") || text.equals("开发人员。")) {
+            textstr = "语音技术由科大讯飞提供\n" + "开发人员：余润身";
+            ret = new Msg(textstr, Msg.TYPE_RECEIVED);
+            msgList.add(ret);
+            // 当有新消息时，刷新 ListView 中的显示
+            msgAdapter.notifyItemInserted(msgList.size() - 1);
+            // 将 ListView 定位到最后一行
+            msgRecyclerView.scrollToPosition(msgList.size() - 1);
+        }
 
         switch (strService) {
             case "telephone": //知道需求是 打电话!
@@ -386,26 +395,26 @@ public class MainActivity extends AppCompatActivity {
 
                 if ("".equals(phoneCode)) {  //报的是 人名, 不是 数字
                     //与手机通讯录里的人名进行比较!!!
-                    mUnderstanderText.append("\n\n" + callName);  //test, 看看是否识别 callName
+                    //mUnderstanderText.append("\n\n" + callName);  //test, 看看是否识别 callName
                     phoneNumber = number(callName);
                     if ("".equals(phoneNumber)) {
                         textstr = "抱歉！联系人里没有" + callName + "这个人";
-                        mUnderstanderText.append("\n" + textstr);
+                        //mUnderstanderText.append("\n" + textstr);
                         //添加到消息列表中
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret);
+                        addToMsgListUI(ret, true);
                     } else {
                         textstr = "好的，正在打电话给" + callName;
-                        mUnderstanderText.append("\n" + textstr);
+                        //mUnderstanderText.append("\n" + textstr);
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret);
+                        addToMsgListUI(ret, true);
                         //调用 打电话 界面, 延时 2 秒
                         callSystemPhone(phoneNumber);
                     }
                 } else { //报的是 数字, 不是 人名
                     textstr = "好的，正在打电话给" + phoneCode;
                     ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                    addToMsgListUI(ret);
+                    addToMsgListUI(ret, true);
                     //调用 打电话 界面, 延时 2 秒
                     callSystemPhone(phoneCode);
                 }
@@ -416,34 +425,24 @@ public class MainActivity extends AppCompatActivity {
                         .optJSONObject("slots").optString("name");
                 switch (strOperation) {
                     case "LAUNCH":  //打开(LAUNCH)
-                        String result = checkApp(appName);
+                        String result = checkAppExist(appName);
                         if ("NoSuchApp".equals(result)) {
                             textstr = "抱歉，手机里没有" + appName + "这个应用";
                             ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                            addToMsgListUI(ret);
+                            addToMsgListUI(ret, true);
                         } else { //手机里有这个软件
                             textstr = "正在打开" + appName;
                             ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                            addToMsgListUI(ret);
+                            addToMsgListUI(ret, true);
                             launchApp(result);
                         }
                         break;
                     case "EXIT": //退出(EXIT)
                         textstr = "功能略显鸡肋，没有实现，请到后台自行退出" + appName;
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret);
+                        addToMsgListUI(ret, true);
                 }//end inside switch
                 break;//case "app"
-            case "faq":
-                String answer = jsonObject.optJSONObject("answer").optString("text");
-                ret = new Msg(answer, Msg.TYPE_RECEIVED);
-                addToMsgListUI(ret);
-                break;
-            case "baike":
-                answer = jsonObject.optJSONObject("answer").optString("text");
-                ret = new Msg(answer, Msg.TYPE_RECEIVED);
-                addToMsgListUI(ret);
-                break;
             case "message":
                 String content = jsonObject.optJSONObject("semantic")
                         .optJSONObject("slots").optString("content");
@@ -453,27 +452,27 @@ public class MainActivity extends AppCompatActivity {
                         .optJSONObject("slots").optString("name");
                 if ("".equals(code)) {
                     //先查看联系人里面有没有这个人
-                    mUnderstanderText.append("\n\n" + sendName);  //test, 看看是否识别 callName
+                    //mUnderstanderText.append("\n\n" + sendName);  //test, 看看是否识别 callName
                     phoneNumber = number(sendName);
                     if ("".equals(phoneNumber)) {
                         textstr = "抱歉！联系人里没有" + sendName + "这个人";
-                        mUnderstanderText.append("\n" + textstr);
+                        //mUnderstanderText.append("\n" + textstr);
                         //添加到消息列表中
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret);
+                        addToMsgListUI(ret, true);
                     } else {
                         textstr = "好的，正在发短信给" + sendName;
-                        mUnderstanderText.append("\n" + textstr);
+                        //mUnderstanderText.append("\n" + textstr);
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret);
+                        addToMsgListUI(ret, true);
                         //调用 发短信 界面, 延时 2 秒
                         sendMessage(phoneNumber, content);
                     }
                 } else { //报的是 数字
                     textstr = "好的，正在发短信";
-                    mUnderstanderText.append("\n" + textstr);
+                    //mUnderstanderText.append("\n" + textstr);
                     ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                    addToMsgListUI(ret);
+                    addToMsgListUI(ret, true);
                     //调用 发短信 界面, 延时 2 秒
                     sendMessage(code, content);
                 }
@@ -481,13 +480,71 @@ public class MainActivity extends AppCompatActivity {
             case "weather":
                 textstr = "正在查询";
                 ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                addToMsgListUI(ret);
+                addToMsgListUI(ret, true);
                 String webUri = jsonObject.optJSONObject("webPage").optString("url");
                 //调用 浏览器 界面, 延时 2 秒
                 openWebPage(webUri);
 
                 break;
+
+            //智能问答
+            case "faq":
+                String answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 15) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
+            case "baike":
+                answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 15) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
+            case "chat":
+                answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 15) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
+            case "openQA":
+                answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 10) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
+            case "datetime":
+                answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 10) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
+            case "calc":
+                answer = jsonObject.optJSONObject("answer").optString("text");
+                ret = new Msg(answer, Msg.TYPE_RECEIVED);
+                if (answer.length() <= 10) {
+                    addToMsgListUI(ret, true);
+                } else {
+                    addToMsgListUI(ret, false);
+                }
+                break;
             default:
+                ret = new Msg("抱歉，我没听懂你说什么", Msg.TYPE_RECEIVED);
+                addToMsgListUI(ret, true);
                 break;
         }//switch
     }//parseJSONObject
@@ -601,10 +658,13 @@ public class MainActivity extends AppCompatActivity {
      * 返回 "NoSuchApp",   说明手机上 有 对应的软件
      * 返回 packageName, 说明手机上 有 对应的软件, 并且返回 packageName
      */
-    private String checkApp(String appName)
+    private String checkAppExist(String appName)
     {
         String applicationName;
         PackageManager packageManager = MainActivity.this.getPackageManager();
+        if (appName.equals("照相机") || appName.equals("摄像机")) {
+            appName = "相机";
+        }
         //获取手机内所有应用
         List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(0);
         for (int i = 0; i < packageInfoList.size(); i++) {
@@ -650,14 +710,14 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 新消息展示在 RecyclerView 中, 并结合 语音合成
      */
-    private void addToMsgListUI(Msg msg)
+    private void addToMsgListUI(Msg msg, boolean speak)
     {
         msgList.add(msg);
         // 当有新消息时，刷新 ListView 中的显示
         msgAdapter.notifyItemInserted(msgList.size() - 1);
         // 将 ListView 定位到最后一行
         msgRecyclerView.scrollToPosition(msgList.size() - 1);
-        if (msg.getType() == Msg.TYPE_RECEIVED) { //调用语音合成
+        if (msg.getType() == Msg.TYPE_RECEIVED && speak) { //调用语音合成
             setmTts();
             mTts.startSpeaking(msg.getContent(), mSynListener);
         }
