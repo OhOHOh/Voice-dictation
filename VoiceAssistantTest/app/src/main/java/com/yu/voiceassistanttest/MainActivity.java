@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
+import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -73,6 +74,17 @@ public class MainActivity extends AppCompatActivity {
     private MsgAdapter msgAdapter;
     private boolean isUploadContacts = false;
 
+    // Android 6.0 中权限授予
+    public static final String[] project = new String[] {
+            "_id", "number", "name"
+    };
+    public static final Uri callLogUri = CallLog.Calls.CONTENT_URI;
+    public static final String selection = "duration >= ?"+"and type = ?";
+    //这是条件中的替换selection 中？的值
+    public static final String[] selectionArgs = new String[]{"0","2"};
+    //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
+    public static final String sortOrder = "date DESC";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -86,9 +98,8 @@ public class MainActivity extends AppCompatActivity {
         SpeechUtility.createUtility(this, SpeechConstant.APPID+"=58eddecc");
 
         initMsgs();   //初始化消息, 欢迎界面
-        /**
-         *  屏幕翻转时 保存 msgList 中的数据
-         */
+
+        // 屏幕翻转时 保存 msgList 中的数据
         if (savedInstanceState != null) {
             msgList = (ArrayList<Msg>) savedInstanceState.getSerializable(KEY_INDEX);
             isUploadContacts = savedInstanceState.getBoolean(KEY_BOOLEAN);
@@ -563,31 +574,48 @@ public class MainActivity extends AppCompatActivity {
     {
         String phoneNumber = "";
         //使用ContentResolver查找联系人数据
-        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                null, null, null, null);
-        if (cursor != null) {
-            //遍历查询结果，找到所需号码
-            while (cursor.moveToNext()) {
-                //获取联系人ID
-                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                //获取联系人的名字
-                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                if (name.equals(contactName)) {
-                    //使用ContentResolver查找联系人的电话号码
-                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-                    if (phone != null) {
-                        if (phone.moveToNext()) {
-                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            phone.close();
-                            return phoneNumber;
-                        }
-                    }
+//        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+//                null, null, null, null);
+//        if (cursor != null) {
+//            //遍历查询结果，找到所需号码
+//            while (cursor.moveToNext()) {
+//                //获取联系人ID
+//                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+//                //获取联系人的名字
+//                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+//                if (name.equals(contactName)) {
+//                    //使用ContentResolver查找联系人的电话号码
+//                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+//                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
+//                    if (phone != null) {
+//                        if (phone.moveToNext()) {
+//                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+//                            phone.close();
+//                            return phoneNumber;
+//                        }
+//                    }
+//                }
+//            }//while
+//        }
+//        if (cursor != null) {
+//            cursor.close();
+//        }
+
+        Cursor callCursor = this.getContentResolver().query(callLogUri, project,
+                selection, selectionArgs, sortOrder);
+        if (callCursor != null) {
+            while (callCursor.moveToNext()) {
+                String contactsName = callCursor.getString(callCursor.getColumnIndexOrThrow("name"));
+                if (name.equals(contactsName)) {
+                    phoneNumber = callCursor.getString(callCursor.getColumnIndexOrThrow("number"));
+                    callCursor.close();
+                    return phoneNumber;
                 }
             }//while
         }
-        if (cursor != null) {
-            cursor.close();
+        //cursor.close();
+        if (callCursor != null) {
+            callCursor.close();
         }
 
         return phoneNumber;
