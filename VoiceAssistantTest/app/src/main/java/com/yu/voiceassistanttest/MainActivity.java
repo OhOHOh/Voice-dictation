@@ -1,12 +1,15 @@
 package com.yu.voiceassistanttest;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
+import android.provider.CallLog;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -72,6 +75,17 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView msgRecyclerView;
     private MsgAdapter msgAdapter;
     private boolean isUploadContacts = false;
+
+    //number 函数中用于 query 查询的参数
+    public static final String[] project = new String[] {
+            "_id", "number", "name"
+    };
+    public static final Uri callLogUri = CallLog.Calls.CONTENT_URI;
+    public static final String selection = "duration >= ?"+"and type = ?";
+    //这是条件中的替换selection 中？的值
+    public static final String[] selectionArgs = new String[]{"0","2"};
+    //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
+    public static final String sortOrder = "date DESC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -318,10 +332,6 @@ public class MainActivity extends AppCompatActivity {
     private ContactManager.ContactListener mContactListener = new ContactManager.ContactListener() {
         @Override
         public void onContactQueryFinish(final String contactInfos, boolean b) {
-            // 注：实际应用中除第一次上传之外，之后应该通过changeFlag判断是否需要上传，否则会造成不必要的流量.
-            // 每当联系人发生变化，该接口都将会被回调，可通过ContactManager.destroy()销毁对象，解除回调。
-            // if(changeFlag) {
-            // 指定引擎类型
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -373,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
         ret = new Msg(text, Msg.TYPE_SENT);
         addToMsgListUI(ret, true);
 
-        if (text.equals("开发者信息。") || text.equals("开发者。") || text.equals("开发人员。")) {
+        if (text.equals("开发者信息。") || text.equals("开发人。") || text.equals("开发人员。")) {
             textstr = "语音技术由科大讯飞提供\n" + "开发人员：余润身";
             ret = new Msg(textstr, Msg.TYPE_RECEIVED);
             msgList.add(ret);
@@ -381,6 +391,7 @@ public class MainActivity extends AppCompatActivity {
             msgAdapter.notifyItemInserted(msgList.size() - 1);
             // 将 ListView 定位到最后一行
             msgRecyclerView.scrollToPosition(msgList.size() - 1);
+            return;
         }
 
         switch (strService) {
@@ -555,15 +566,31 @@ public class MainActivity extends AppCompatActivity {
     public String number(String name)
     {
         String phoneNumber = "";
-        //使用ContentResolver查找联系人数据
         Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
                 null, null, null, null);
+
+        //使用ContentResolver查找联系人数据
+        //Cursor callCursor = getContentResolver().query(callLogUri, project,
+        //       selection, selectionArgs, sortOrder);
+//        while(cursor.moveToNext()) {
+//            //测试
+//            //获取联系人ID
+//            String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+//            //获取联系人的名字
+//            String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+//            Display.append(contactId + '\n');
+//            Display.append(contactName + '\n');
+//        }
+//        cursor.moveToFirst();
+//        cursor.moveToPrevious();
+
+
         //遍历查询结果，找到所需号码
         while (cursor.moveToNext()) {
             //获取联系人ID
             String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-            //获取联系人的名字
-            String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+           //获取联系人的名字
+            String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
             if (name.equals(contactName)) {
                 //使用ContentResolver查找联系人的电话号码
                 Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -575,7 +602,24 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }//while
-        cursor.close();
+        if (cursor != null) {
+            cursor.close();
+        }
+
+//        if (callCursor != null) {
+//            while (callCursor.moveToNext()) {
+//                String contactsName = callCursor.getString(callCursor.getColumnIndexOrThrow("name"));
+//                if (name.equals(contactsName)) {
+//                    phoneNumber = callCursor.getString(callCursor.getColumnIndexOrThrow("number"));
+//                    callCursor.close();
+//                    return phoneNumber;
+//                }
+//            }//while
+//        }
+//        //cursor.close();
+//        if (callCursor != null) {
+//            callCursor.close();
+//        }
         return phoneNumber;
     }
     /**
@@ -661,14 +705,18 @@ public class MainActivity extends AppCompatActivity {
     private String checkAppExist(String appName)
     {
         String applicationName;
-        PackageManager packageManager = MainActivity.this.getPackageManager();
         if (appName.equals("照相机") || appName.equals("摄像机")) {
             appName = "相机";
         }
+        if (appName.equals("qq")) {
+            appName = "QQ";
+        }
+        PackageManager packageManager = MainActivity.this.getPackageManager();
         //获取手机内所有应用
         List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(0);
         for (int i = 0; i < packageInfoList.size(); i++) {
-            applicationName = packageManager.getApplicationLabel(packageInfoList.get(i).applicationInfo).toString();
+            PackageInfo pInfo = packageInfoList.get(i);
+            applicationName = packageManager.getApplicationLabel(pInfo.applicationInfo).toString();
             if (applicationName.equals(appName)) { //说明手机上有这个软件
                 return packageInfoList.get(i).applicationInfo.packageName;
             }
@@ -774,8 +822,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     /**
-     * 屏幕翻转时 保存 msgList 中的数据
-     * @param savedInstanceState
+     *  屏幕翻转时 保存 msgList 中的数据
      */
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState)
