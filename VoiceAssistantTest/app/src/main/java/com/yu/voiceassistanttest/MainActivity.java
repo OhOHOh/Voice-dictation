@@ -438,9 +438,16 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     case "EXIT": //退出(EXIT)
-                        textstr = "功能略显鸡肋，没有实现，请到后台自行退出" + appName;
-                        ret = new Msg(textstr, Msg.TYPE_RECEIVED);
-                        addToMsgListUI(ret, true);
+                        String exit_result = checkAppExist(appName);
+                        if ("NoSuchApp".equals(exit_result)) {
+                            textstr = "手机里没有" + appName + "这个应用，还叫我关闭???";
+                            ret = new Msg(textstr, Msg.TYPE_RECEIVED);
+                            addToMsgListUI(ret, true);
+                        } else { //手机里有这个软件
+                            textstr = "功能略显鸡肋，没有实现，请到后台自行退出" + appName;
+                            ret = new Msg(textstr, Msg.TYPE_RECEIVED);
+                            addToMsgListUI(ret, true);
+                        }
                 }//end inside switch
                 break;//case "app"
             case "message":
@@ -558,24 +565,31 @@ public class MainActivity extends AppCompatActivity {
         //使用ContentResolver查找联系人数据
         Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
                 null, null, null, null);
-        //遍历查询结果，找到所需号码
-        while (cursor.moveToNext()) {
-            //获取联系人ID
-            String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-            //获取联系人的名字
-            String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-            if (name.equals(contactName)) {
-                //使用ContentResolver查找联系人的电话号码
-                Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-                if (phone.moveToNext()) {
-                    phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    phone.close();
-                    return phoneNumber;
+        if (cursor != null) {
+            //遍历查询结果，找到所需号码
+            while (cursor.moveToNext()) {
+                //获取联系人ID
+                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                //获取联系人的名字
+                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                if (name.equals(contactName)) {
+                    //使用ContentResolver查找联系人的电话号码
+                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
+                    if (phone != null) {
+                        if (phone.moveToNext()) {
+                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                            phone.close();
+                            return phoneNumber;
+                        }
+                    }
                 }
-            }
-        }//while
-        cursor.close();
+            }//while
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+
         return phoneNumber;
     }
     /**
@@ -774,8 +788,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     /**
-     * 屏幕翻转时 保存 msgList 中的数据
-     * @param savedInstanceState
+     *  屏幕翻转时 保存 msgList 中的数据
      */
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState)
