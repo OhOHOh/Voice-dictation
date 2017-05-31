@@ -1,17 +1,12 @@
 package com.yu.voiceassistanttest;
 
-import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
-import android.provider.CallLog;
 import android.provider.ContactsContract;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -52,17 +47,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.OnNeverAskAgain;
-import permissions.dispatcher.OnPermissionDenied;
-import permissions.dispatcher.OnShowRationale;
-import permissions.dispatcher.PermissionRequest;
-import permissions.dispatcher.RuntimePermissions;
-
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-@RuntimePermissions
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -85,17 +72,6 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView msgRecyclerView;
     private MsgAdapter msgAdapter;
     private boolean isUploadContacts = false;
-
-    //
-    public static final String[] project = new String[] {
-            "_id", "number", "name"
-    };
-    public static final Uri callLogUri = CallLog.Calls.CONTENT_URI;
-    public static final String selection = "duration >= ?"+"and type = ?";
-    //这是条件中的替换selection 中？的值
-    public static final String[] selectionArgs = new String[]{"0","2"};
-    //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
-    public static final String sortOrder = "date DESC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -587,50 +563,31 @@ public class MainActivity extends AppCompatActivity {
     {
         String phoneNumber = "";
         //使用ContentResolver查找联系人数据
-//        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-//                null, null, null, null);
-//        if (cursor != null) {
-//            //遍历查询结果，找到所需号码
-//            while (cursor.moveToNext()) {
-//                //获取联系人ID
-//                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-//                //获取联系人的名字
-//                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-//                if (name.equals(contactName)) {
-//                    //使用ContentResolver查找联系人的电话号码
-//                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-//                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-//                    if (phone != null) {
-//                        if (phone.moveToNext()) {
-//                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-//                            phone.close();
-//                            return phoneNumber;
-//                        }
-//                    }
-//                }
-//            }//while
-//        }
-//        if (cursor != null) {
-//            cursor.close();
-//        }
-
-        MainActivityPermissionsDispatcher.needsPermissionWithCheck(MainActivity.this);
-
-        Cursor callCursor = this.getContentResolver().query(callLogUri, project,
-                selection, selectionArgs, sortOrder);
-        if (callCursor != null) {
-            while (callCursor.moveToNext()) {
-                String contactsName = callCursor.getString(callCursor.getColumnIndexOrThrow("name"));
-                if (name.equals(contactsName)) {
-                    phoneNumber = callCursor.getString(callCursor.getColumnIndexOrThrow("number"));
-                    callCursor.close();
-                    return phoneNumber;
+        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                null, null, null, null);
+        if (cursor != null) {
+            //遍历查询结果，找到所需号码
+            while (cursor.moveToNext()) {
+                //获取联系人ID
+                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                //获取联系人的名字
+                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                if (name.equals(contactName)) {
+                    //使用ContentResolver查找联系人的电话号码
+                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
+                    if (phone != null) {
+                        if (phone.moveToNext()) {
+                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                            phone.close();
+                            return phoneNumber;
+                        }
+                    }
                 }
             }//while
         }
-        //cursor.close();
-        if (callCursor != null) {
-            callCursor.close();
+        if (cursor != null) {
+            cursor.close();
         }
 
         return phoneNumber;
@@ -862,51 +819,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-
-
-
-    @NeedsPermission(Manifest.permission.READ_CALL_LOG)
-    void needsPermission() {
-        Toast.makeText(this, "通话记录权限申请成功！", Toast.LENGTH_SHORT).show();
-    }
-
-
-    @OnShowRationale(Manifest.permission.READ_CALL_LOG)
-    void showRationale(final PermissionRequest request) {
-        new AlertDialog.Builder(this)
-                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(@NonNull DialogInterface dialog, int which) {
-                        request.proceed();
-                    }
-                })
-                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(@NonNull DialogInterface dialog, int which) {
-                        request.cancel();
-                    }
-                })
-                .setCancelable(false)
-                .setMessage("申请使用通话记录")
-                .show();
-    }
-
-    @OnPermissionDenied(Manifest.permission.READ_CALL_LOG)
-    void permissionDenied() {
-        Toast.makeText(this, "权限被拒绝", Toast.LENGTH_SHORT).show();
-    }
-
-    @OnNeverAskAgain(Manifest.permission.READ_CALL_LOG)
-    void neverAskAgain() {
-        Toast.makeText(this, "不再询问", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
-    }
-
 
 }
