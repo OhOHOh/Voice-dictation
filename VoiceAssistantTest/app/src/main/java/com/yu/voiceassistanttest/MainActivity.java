@@ -1,6 +1,5 @@
 package com.yu.voiceassistanttest;
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -9,7 +8,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -50,13 +48,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.RuntimePermissions;
-
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-@RuntimePermissions
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -81,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean isUploadContacts = false;
 
     // Android 6.0 中权限授予
-    String phoneNumberG = "";
     public static final String[] project = new String[] {
             "_id", "number", "name"
     };
@@ -91,11 +84,6 @@ public class MainActivity extends AppCompatActivity {
     public static final String[] selectionArgs = new String[]{"0","2"};
     //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
     public static final String sortOrder = "date DESC";
-    public final int MY_PERMISSIONS_REQUEST_READ_CALL_LOG = 100;
-
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -419,7 +407,7 @@ public class MainActivity extends AppCompatActivity {
                 if ("".equals(phoneCode)) {  //报的是 人名, 不是 数字
                     //与手机通讯录里的人名进行比较!!!
                     //mUnderstanderText.append("\n\n" + callName);  //test, 看看是否识别 callName
-                    phoneNumber = numberPhone(callName);
+                    phoneNumber = number(callName);
                     if ("".equals(phoneNumber)) {
                         textstr = "抱歉！联系人里没有" + callName + "这个人";
                         //mUnderstanderText.append("\n" + textstr);
@@ -483,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
                 if ("".equals(code)) {
                     //先查看联系人里面有没有这个人
                     //mUnderstanderText.append("\n\n" + sendName);  //test, 看看是否识别 callName
-                    phoneNumber = numberSms(sendName);
+                    phoneNumber = number(sendName);
                     if ("".equals(phoneNumber)) {
                         textstr = "抱歉！联系人里没有" + sendName + "这个人";
                         //mUnderstanderText.append("\n" + textstr);
@@ -580,10 +568,9 @@ public class MainActivity extends AppCompatActivity {
     }//parseJSONObject
 
     /**
-     *  通过输入的姓名, 获取电话号码
-     *  用于电话查询，先在通话记录里面查询，如果不行再在所有联系人里面查询
+     * 通过输入的姓名, 获取电话号码
      */
-    public String numberPhone(String name)
+    public String number(String name)
     {
         String phoneNumber = "";
         //使用ContentResolver查找联系人数据
@@ -614,70 +601,23 @@ public class MainActivity extends AppCompatActivity {
 //            cursor.close();
 //        }
 
-        MainActivityPermissionsDispatcher.getCallLogCursorWithCheck(MainActivity.this, name);
-
-//        if ("".equals(phoneNumberG)) {  //这个联系人之前从没通过电话，再在总的联系人里面找
-//            Cursor callCurosr = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-//                null, null, null, null);
-//            if (callCurosr != null) {
-//                //遍历查询结果，找到所需号码
-//                while (callCurosr.moveToNext()) {
-//                    //获取联系人ID
-//                    String contactId = callCurosr.getString(callCurosr.getColumnIndex(ContactsContract.Contacts._ID));
-//                    //获取联系人的名字
-//                    String contactName = callCurosr.getString(callCurosr.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-//                    if (name.equals(contactName)) {
-//                        //使用ContentResolver查找联系人的电话号码
-//                        Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-//                                null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-//                        if (phone != null) {
-//                            if (phone.moveToNext()) { //肯定可以
-//                                phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-//                                phone.close();
-//                                return phoneNumber;
-//                            }
-//                        }
-//                        break;
-//                    }
-//                }//while
-//            }
-//        } else {
-        phoneNumber = phoneNumberG;
-        return phoneNumber;
-    }
-    /**
-     *  通过输入的姓名, 获取电话号码，用于短信业务，直接从所有联系人里面查询姓名
-     */
-    public String numberSms(String name)
-    {
-        String phoneNumber = "";
-        //使用ContentResolver查找联系人数据
-        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                null, null, null, null);
-        if (cursor != null) {
-            //遍历查询结果，找到所需号码
-            while (cursor.moveToNext()) {
-                //获取联系人ID
-                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                //获取联系人的名字
-                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                if (name.equals(contactName)) {
-                    //使用ContentResolver查找联系人的电话号码
-                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-                    if (phone != null) {
-                        if (phone.moveToNext()) {
-                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            phone.close();
-                            return phoneNumber;
-                        }
-                    }
+        Cursor callCursor = this.getContentResolver().query(callLogUri, project,
+                selection, selectionArgs, sortOrder);
+        if (callCursor != null) {
+            while (callCursor.moveToNext()) {
+                String contactsName = callCursor.getString(callCursor.getColumnIndexOrThrow("name"));
+                if (name.equals(contactsName)) {
+                    phoneNumber = callCursor.getString(callCursor.getColumnIndexOrThrow("number"));
+                    callCursor.close();
+                    return phoneNumber;
                 }
             }//while
         }
-        if (cursor != null) {
-            cursor.close();
+        //cursor.close();
+        if (callCursor != null) {
+            callCursor.close();
         }
+
         return phoneNumber;
     }
     /**
@@ -907,31 +847,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-
-
-    @NeedsPermission(Manifest.permission.READ_CALL_LOG)
-    void getCallLogCursor(String name) {
-        phoneNumberG = "";
-        Cursor callLogCursor = getContentResolver().query(callLogUri, project,
-                selection, selectionArgs, sortOrder);
-        if (callLogCursor != null) {
-            while (callLogCursor.moveToNext()) {
-                String contactsName = callLogCursor.getString(callLogCursor.getColumnIndexOrThrow("name"));
-                if (name.equals(contactsName)) {
-                    phoneNumberG = callLogCursor.getString(callLogCursor.getColumnIndexOrThrow("number"));
-                    callLogCursor.close();
-                }
-            }//while
-        }
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
-    }
-
 
 }
