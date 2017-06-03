@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
+import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -72,6 +73,15 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView msgRecyclerView;
     private MsgAdapter msgAdapter;
     private boolean isUploadContacts = false;
+
+    //数据库 query 查询的参数
+    public static final Uri callLogUri = CallLog.Calls.CONTENT_URI;
+    public static final Uri contactUri = ContactsContract.Contacts.CONTENT_URI;
+    public static final String selection = null;
+    //这是条件中的替换selection 中？的值
+    public static final String[] selectionArgs = null;
+    //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
+    public static final String sortOrder = "name_raw_contact_id DESC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -563,8 +573,8 @@ public class MainActivity extends AppCompatActivity {
     {
         String phoneNumber = "";
         //使用ContentResolver查找联系人数据
-        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                null, null, null, null);
+        Cursor cursor = getContentResolver().query(contactUri, null,
+                selection, selectionArgs, sortOrder);
         if (cursor != null) {
             //遍历查询结果，找到所需号码
             while (cursor.moveToNext()) {
