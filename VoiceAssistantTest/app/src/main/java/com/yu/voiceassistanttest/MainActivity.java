@@ -1,5 +1,7 @@
 package com.yu.voiceassistanttest;
 
+import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -8,6 +10,9 @@ import android.net.Uri;
 import android.os.Handler;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -56,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String KEY_INDEX = "index";
     private static final String KEY_BOOLEAN = "iboolean";
+    //请求权限
+    private final int MY_READ_CALL_LOG_REQUEST = 0x001;
 
     private SpeechRecognizer mIat;
     // 语义理解对象（语音到语义）。
@@ -75,13 +82,22 @@ public class MainActivity extends AppCompatActivity {
     private boolean isUploadContacts = false;
 
     //数据库 query 查询的参数
+    //public String contactPhoneNumber = new String("");
+    public static final String[] callLogProject = new String[] {
+            "_id", "number", "name"
+    };
     public static final Uri callLogUri = CallLog.Calls.CONTENT_URI;
-    public static final Uri contactUri = ContactsContract.Contacts.CONTENT_URI;
-    public static final String selection = null;
+    public static final String callLogSelection = "duration >= ?"+"and type = ?";
     //这是条件中的替换selection 中？的值
-    public static final String[] selectionArgs = null;
+    public static final String[] callLogSelectionArgs = new String[]{"0","2"};
     //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
-    public static final String sortOrder = "name_raw_contact_id DESC";
+    public static final String callLogSortOrder = "date DESC";
+    public static final Uri contactUri = ContactsContract.Contacts.CONTENT_URI;
+    public static final String contactSelection = null;
+    //这是条件中的替换selection 中？的值
+    public static final String[] contactSelectionArgs = null;
+    //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
+    public static final String contactSortOrder = "name_raw_contact_id DESC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         SpeechUtility.createUtility(this, SpeechConstant.APPID+"=58eddecc");
+        selfRequestPermission();
 
         initMsgs();   //初始化消息, 欢迎界面
         /**
@@ -401,19 +418,23 @@ public class MainActivity extends AppCompatActivity {
                 //电话号码, EG:打给120
                 String phoneCode = jsonObject.optJSONObject("semantic")
                         .optJSONObject("slots").optString("code");
-                String phoneNumber;
+                String phoneNumber = "";
 
                 if ("".equals(phoneCode)) {  //报的是 人名, 不是 数字
                     //与手机通讯录里的人名进行比较!!!
                     //mUnderstanderText.append("\n\n" + callName);  //test, 看看是否识别 callName
                     phoneNumber = number(callName);
-                    if ("".equals(phoneNumber)) {
+                    if ("".equals(phoneNumber)) {                        //没有这个联系人
                         textstr = "抱歉！联系人里没有" + callName + "这个人";
                         //mUnderstanderText.append("\n" + textstr);
                         //添加到消息列表中
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
                         addToMsgListUI(ret, true);
-                    } else {
+                    } else if ("NoTelephoneNumber".equals(phoneNumber)){ //联系人名下没有号码
+                        textstr = "抱歉！你没有给" + callName + "添加号码";
+                        ret = new Msg(textstr, Msg.TYPE_RECEIVED);
+                        addToMsgListUI(ret, true);
+                    } else {                                             //联系人名下有号码
                         textstr = "好的，正在打电话给" + callName;
                         //mUnderstanderText.append("\n" + textstr);
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
@@ -467,7 +488,7 @@ public class MainActivity extends AppCompatActivity {
                         .optJSONObject("slots").optString("code");
                 String sendName = jsonObject.optJSONObject("semantic")
                         .optJSONObject("slots").optString("name");
-                if ("".equals(code)) {
+                if ("".equals(code)) { //报的是 人名
                     //先查看联系人里面有没有这个人
                     //mUnderstanderText.append("\n\n" + sendName);  //test, 看看是否识别 callName
                     phoneNumber = number(sendName);
@@ -475,6 +496,10 @@ public class MainActivity extends AppCompatActivity {
                         textstr = "抱歉！联系人里没有" + sendName + "这个人";
                         //mUnderstanderText.append("\n" + textstr);
                         //添加到消息列表中
+                        ret = new Msg(textstr, Msg.TYPE_RECEIVED);
+                        addToMsgListUI(ret, true);
+                    } else if ("NoTelephoneNumber".equals(phoneNumber)){
+                        textstr = "抱歉！你没有给" + sendName + "添加号码";
                         ret = new Msg(textstr, Msg.TYPE_RECEIVED);
                         addToMsgListUI(ret, true);
                     } else {
@@ -571,34 +596,57 @@ public class MainActivity extends AppCompatActivity {
      */
     public String number(String name)
     {
+        //Boolean numberFound = false;
         String phoneNumber = "";
-        //使用ContentResolver查找联系人数据
-        Cursor cursor = getContentResolver().query(contactUri, null,
-                selection, selectionArgs, sortOrder);
-        if (cursor != null) {
-            //遍历查询结果，找到所需号码
-            while (cursor.moveToNext()) {
-                //获取联系人ID
-                String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                //获取联系人的名字
-                String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                if (name.equals(contactName)) {
-                    //使用ContentResolver查找联系人的电话号码
-                    Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
-                    if (phone != null) {
-                        if (phone.moveToNext()) {
-                            phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            phone.close();
-                            return phoneNumber;
-                        }
-                    }
+
+        Cursor callCursor = this.getContentResolver().query(callLogUri, callLogProject,
+                callLogSelection, callLogSelectionArgs, callLogSortOrder);
+        if (callCursor != null) {
+            while (callCursor.moveToNext()) {
+                String contactsName = callCursor.getString(callCursor.getColumnIndexOrThrow("name"));
+                if (name.equals(contactsName)) {
+                    phoneNumber = callCursor.getString(callCursor.getColumnIndexOrThrow("number"));
+                    callCursor.close();
+                    return phoneNumber;
                 }
             }//while
         }
-        if (cursor != null) {
-            cursor.close();
+        //cursor.close();
+        if (callCursor != null) {
+            callCursor.close();
         }
+
+
+        if ("".equals(phoneNumber)) { //如果通话记录里面没有 所查人的电话号码
+            //使用ContentResolver查找联系人数据
+            Cursor cursor = getContentResolver().query(contactUri, null,
+                    contactSelection, contactSelectionArgs, contactSortOrder);
+            if (cursor != null) {
+                //遍历查询结果，找到所需号码
+                while (cursor.moveToNext()) {
+                    //获取联系人ID
+                    String contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                    //获取联系人的名字
+                    String contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                    if (name.equals(contactName)) {
+                        phoneNumber = "NoTelephoneNumber";
+                        //使用ContentResolver查找联系人的电话号码
+                        Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
+                        if (phone != null) {
+                            if (phone.moveToNext()) {
+                                phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                phone.close();
+                                return phoneNumber;
+                            }
+                        }
+                    }
+                }//while
+            }
+            if (cursor != null) {
+                cursor.close();
+            }
+        } //如果通话记录里面没有 所查人的电话号码
 
         return phoneNumber;
     }
@@ -808,6 +856,59 @@ public class MainActivity extends AppCompatActivity {
         savedInstanceState.putSerializable(KEY_INDEX, (Serializable) msgList);
         savedInstanceState.putBoolean(KEY_BOOLEAN, isUploadContacts);
     }
+
+    /**
+     *  请求 READ_CALL_LOG 权限
+     */
+    private void selfRequestPermission()
+    {
+        int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.READ_CALL_LOG);
+
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) { //如果权限没有被授予
+                //Display.append("READ_CALL_LOG没有被授予");
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                    Manifest.permission.READ_CALL_LOG)) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("申请读取通话记录的权限")
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                //申请 READ_CALL_LOG 的权限
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.READ_CALL_LOG},
+                                        MY_READ_CALL_LOG_REQUEST);
+                                    //Display.append("READ_CALL_LOG 权限已申请1\n");
+                            }
+                        }).show();
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.READ_CALL_LOG},
+                        MY_READ_CALL_LOG_REQUEST);
+                    //Display.append("READ_CALL_LOG 权限已申请2\n");
+            }
+        }
+//        else {
+//            number(name);
+//        }
+    } // selfRequestPermission()
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+    {
+        switch (requestCode) {
+            case MY_READ_CALL_LOG_REQUEST:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        //Display.append("READ_CALL_LOG 权限已被授予2\n");
+                    showTip("READ_CALL_LOG 权限已被授予");
+                }
+
+        }// switch
+    }
+
 
 
     protected void onDestroy() {
