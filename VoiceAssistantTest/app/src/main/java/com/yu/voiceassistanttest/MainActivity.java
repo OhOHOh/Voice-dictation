@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String[] callLogSelectionArgs = new String[]{"0","2"};
     //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
     public static final String callLogSortOrder = "date DESC";
+
     public static final Uri contactUri = ContactsContract.Contacts.CONTENT_URI;
     public static final String contactSelection = null;
     //这是条件中的替换selection 中？的值
@@ -122,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (!isUploadContacts) {
             //上传联系人
-            Toast.makeText(this, "isUpdateContacts is false", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "isUpdateContacts is false", Toast.LENGTH_SHORT).show();
             ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
             mgr.asyncQueryAllContactsName();
             isUploadContacts = true;
@@ -371,9 +372,10 @@ public class MainActivity extends AppCompatActivity {
         public void onLexiconUpdated(String lexiconId, SpeechError speechError) {
             if (speechError != null) {
                 showTip(speechError.toString());
-            } else {
-                showTip(getString(R.string.text_upload_success));
             }
+//            else {
+//                showTip(getString(R.string.text_upload_success));
+//            }
         }
     };
 
@@ -578,11 +580,7 @@ public class MainActivity extends AppCompatActivity {
             case "calc":
                 answer = jsonObject.optJSONObject("answer").optString("text");
                 ret = new Msg(answer, Msg.TYPE_RECEIVED);
-                if (answer.length() <= 10) {
-                    addToMsgListUI(ret, true);
-                } else {
-                    addToMsgListUI(ret, false);
-                }
+                addToMsgListUI(ret, false);
                 break;
             default:
                 ret = new Msg("抱歉，我没听懂你说什么", Msg.TYPE_RECEIVED);
@@ -634,7 +632,7 @@ public class MainActivity extends AppCompatActivity {
                         Cursor phone = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                                 null, ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
                         if (phone != null) {
-                            if (phone.moveToNext()) {
+                            if (phone.moveToLast()) {
                                 phoneNumber = phone.getString(phone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
                                 phone.close();
                                 return phoneNumber;
@@ -649,7 +647,7 @@ public class MainActivity extends AppCompatActivity {
         } //如果通话记录里面没有 所查人的电话号码
 
         return phoneNumber;
-    }
+    } // number
     /**
      * 调用系统自带的 打电话 软件,   延迟 2 秒实现
      */
@@ -737,10 +735,14 @@ public class MainActivity extends AppCompatActivity {
         if (appName.equals("照相机") || appName.equals("摄像机")) {
             appName = "相机";
         }
+        if (appName.equals("qq")) {
+            appName = "QQ";
+        }
         //获取手机内所有应用
         List<PackageInfo> packageInfoList = packageManager.getInstalledPackages(0);
         for (int i = 0; i < packageInfoList.size(); i++) {
-            applicationName = packageManager.getApplicationLabel(packageInfoList.get(i).applicationInfo).toString();
+            applicationName = packageManager.getApplicationLabel(
+                    packageInfoList.get(i).applicationInfo).toString();
             if (applicationName.equals(appName)) { //说明手机上有这个软件
                 return packageInfoList.get(i).applicationInfo.packageName;
             }
