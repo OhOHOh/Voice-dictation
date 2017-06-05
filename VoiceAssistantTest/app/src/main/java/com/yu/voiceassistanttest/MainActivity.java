@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_BOOLEAN = "iboolean";
     //请求权限
     private final int MY_READ_CALL_LOG_REQUEST = 0x001;
+    private final int MY_READ_CONTACTS_REQUEST = 0x002;
 
     private SpeechRecognizer mIat;
     // 语义理解对象（语音到语义）。
@@ -99,6 +100,8 @@ public class MainActivity extends AppCompatActivity {
     public static final String[] contactSelectionArgs = null;
     //这是查询结果显示的顺序，顺序有二种：ASC为升序，DESC为降序
     public static final String contactSortOrder = "name_raw_contact_id DESC";
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -420,7 +423,7 @@ public class MainActivity extends AppCompatActivity {
                 //电话号码, EG:打给120
                 String phoneCode = jsonObject.optJSONObject("semantic")
                         .optJSONObject("slots").optString("code");
-                String phoneNumber = "";
+                String phoneNumber;
 
                 if ("".equals(phoneCode)) {  //报的是 人名, 不是 数字
                     //与手机通讯录里的人名进行比较!!!
@@ -866,6 +869,8 @@ public class MainActivity extends AppCompatActivity {
     {
         int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.READ_CALL_LOG);
+        int permissionCheckContacts = ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.READ_CONTACTS);
 
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) { //如果权限没有被授予
                 //Display.append("READ_CALL_LOG没有被授予");
@@ -895,6 +900,32 @@ public class MainActivity extends AppCompatActivity {
 //        else {
 //            number(name);
 //        }
+        if (permissionCheckContacts != PackageManager.PERMISSION_GRANTED) { //如果权限没有被授予
+            //Display.append("READ_CALL_LOG没有被授予");
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                    Manifest.permission.READ_CONTACTS)) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("申请读取联系人信息的权限")
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                //申请 READ_CALL_LOG 的权限
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.READ_CONTACTS},
+                                        MY_READ_CONTACTS_REQUEST);
+                                //Display.append("READ_CALL_LOG 权限已申请1\n");
+                            }
+                        }).show();
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.READ_CONTACTS},
+                        MY_READ_CONTACTS_REQUEST);
+                //Display.append("READ_CALL_LOG 权限已申请2\n");
+            }
+        }
+
     } // selfRequestPermission()
 
     @Override
@@ -907,7 +938,16 @@ public class MainActivity extends AppCompatActivity {
                         //Display.append("READ_CALL_LOG 权限已被授予2\n");
                     showTip("READ_CALL_LOG 权限已被授予");
                 }
-
+                break;
+            case MY_READ_CONTACTS_REQUEST:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //Display.append("READ_CONTACTS 权限已被授予2\n");
+                    showTip("READ_CONTACTS 权限已被授予");
+                }
+                break;
+            default:
+                break;
         }// switch
     }
 
