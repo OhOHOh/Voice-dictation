@@ -117,9 +117,8 @@ public class MainActivity extends AppCompatActivity {
         selfRequestPermission();
 
         initMsgs();   //初始化消息, 欢迎界面
-        /**
-         *  屏幕翻转时 保存 msgList 中的数据
-         */
+
+        //屏幕翻转时 保存 msgList 中的数据
         if (savedInstanceState != null) {
             msgList = (ArrayList<Msg>) savedInstanceState.getSerializable(KEY_INDEX);
             isUploadContacts = savedInstanceState.getBoolean(KEY_BOOLEAN);
@@ -127,7 +126,8 @@ public class MainActivity extends AppCompatActivity {
         if (!isUploadContacts) {
             //上传联系人
             //Toast.makeText(this, "isUpdateContacts is false", Toast.LENGTH_SHORT).show();
-            ContactManager mgr = ContactManager.createManager(MainActivity.this, mContactListener);
+            ContactManager mgr = ContactManager.
+                    createManager(MainActivity.this, mContactListener);
             mgr.asyncQueryAllContactsName();
             isUploadContacts = true;
         }
